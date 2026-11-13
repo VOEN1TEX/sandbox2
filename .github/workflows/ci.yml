@@ -68,7 +68,7 @@ jobs:
         with:
           images: |
             ghcr.io/${{ github.repository_owner }}/sandbox-${{ matrix.component }}
-            ${{ secrets.NEXUS_HOST }}/adylkhanov-${{ matrix.component }}-docker/sandbox-${{ matrix.component }}
+            ${{ vars.NEXUS_HOST }}/adylkhanov-${{ matrix.component }}-docker/sandbox-${{ matrix.component }}
           tags: |
             type=raw,value=${{ needs.version.outputs.version }}
             type=sha,format=short
@@ -116,11 +116,11 @@ jobs:
 
       - name: Execute deployment via SSH
         run: |
-          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
+          ssh ${{ vars.VM_USER }}@${{ vars.VM_HOST }} << 'EOF'
             cd ~/app
             
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-            echo "${{ secrets.NEXUS_REPO_PASS }}" | docker login ${{ secrets.NEXUS_HOST }} -u ${{ secrets.NEXUS_REPO_USER }} --password-stdin
+            echo "${{ secrets.NEXUS_REPO_PASS }}" | docker login ${{ vars.NEXUS_HOST }} -u ${{ vasrs.NEXUS_REPO_USER }} --password-stdin
             
             docker compose pull
             docker compose up -d --remove-orphans
