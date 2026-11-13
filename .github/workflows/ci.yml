@@ -31,6 +31,7 @@ jobs:
 
   build:
     needs: version
+    environment: VM
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -90,6 +91,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
+    environment: VM
     needs: [version, build]
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
