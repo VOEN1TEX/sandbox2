@@ -20,7 +20,6 @@ jobs:
       - name: Set Version
         id: set_version
         run: |
-          # Если запуск ручной и передана версия - используем её (для отката)
           if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.VERSION }}" ]; then
             echo "version=${{ github.event.inputs.VERSION }}" >> $GITHUB_OUTPUT
           else
