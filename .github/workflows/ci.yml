@@ -139,9 +139,9 @@ jobs:
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
             echo "${{ secrets.NEXUS_REPO_PASS }}" | docker login ${{ vars.NEXUS_HOST }} -u ${{ vars.NEXUS_REPO_USER }} --password-stdin
             
-            docker compose pull
-            docker compose up -d --remove-orphans
-            docker image prune -f
+            sudo docker compose pull
+            sudo docker compose up -d --remove-orphans
+            sudo docker image prune -f
             
             echo "${{ needs.version.outputs.version }}" > version.txt
           EOF
