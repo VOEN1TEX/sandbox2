@@ -1,0 +1,44 @@
+name: buil_obraz
+
+on:
+  push:
+    branches: [ "**" ]
+  workflow_dispatch:
+    inputs:
+      VERSION:
+        description: "ручками ввести версию"
+        required: false
+        type: string
+
+
+jobs:
+ version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set_version.outputs.version }}
+    steps:
+      - name: Set Version
+        id: set_version
+        run: |
+          # Если запуск ручной и передана версия - используем её (для отката)
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.VERSION }}" ]; then
+            echo "version=${{ github.event.inputs.VERSION }}" >> $GITHUB_OUTPUT
+          else
+            # Иначе генерируем новую версию
+            echo "version=$(date -u +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
+          fi
+
+  jobs:
+    build:
+      name: build
+      runs-on: ubuntu-latest
+      outputs:
+        - name: Calculation version 
+          id: version
+          env: 
+            INPUT_VERSION: ${{ inputs.VERSION }}
+          run: |
+            VERSION=$(date -u +%Y%m%d-%H%M%S)
+            echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+            echo "VERSION=${VERSION}
+  
