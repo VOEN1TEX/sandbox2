@@ -1,0 +1,26 @@
+services:
+  backend:
+    image: adylkhanov-backend:latest
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"
+    networks:
+      - adylkhanov-network
+    restart: unless-stopped
+
+  frontend:
+    image: adylkhanov-frontend:latest
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+    networks:
+      - adylkhanov-network
+    restart: unless-stopped
+
+networks:
+  adylkhanov-network:
+    driver: bridge
