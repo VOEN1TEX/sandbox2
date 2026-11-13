@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       VERSION:
-        description: 'Версия для деплоя (для отката). Оставьте пустым для новой сборки.'
+        description: 'Версия для запуска руками.'
         required: false
         type: string
 
