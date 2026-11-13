@@ -45,7 +45,7 @@ jobs:
       - name: Configure Docker for insecure registry
         run: |
           sudo mkdir -p /etc/docker
-          echo '{"insecure-registries":["${{ secrets.NEXUS_HOST }}"]}' | sudo tee /etc/docker/daemon.json
+          echo '{"insecure-registries":["${{ vars.NEXUS_HOST }}"]}' | sudo tee /etc/docker/daemon.json
           sudo systemctl restart docker
 
       - name: Login to GitHub Container Registry
@@ -58,8 +58,8 @@ jobs:
       - name: Login to Nexus Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.NEXUS_HOST }}
-          username: ${{ secrets.NEXUS_REPO_USER }}
+          registry: ${{ vars.NEXUS_HOST }}
+          username: ${{ vars.NEXUS_REPO_USER }}
           password: ${{ secrets.NEXUS_REPO_PASS }}
 
       - name: Extract Docker metadata
@@ -94,13 +94,13 @@ jobs:
 
       - name: Create and configure .env
         run: |
-          echo "${{ secrets.APP_ENV_FILE }}" > .env
+          echo "${{ vars.APP_ENV_FILE }}" > .env
           echo "" >> .env
           echo "VERSION=${{ needs.version.outputs.version }}" >> .env
           echo "IMAGE_TAG=${{ needs.version.outputs.version }}" >> .env
-          echo "IMAGE_REGISTRY=${{ secrets.NEXUS_HOST }}/adylkhanov" >> .env
-          echo "REPOSITORY_BACKEND=${{ secrets.NEXUS_HOST }}/adylkhanov-backend-docker/sandbox-backend" >> .env
-          echo "REPOSITORY_FRONTEND=${{ secrets.NEXUS_HOST }}/adylkhanov-frontend-docker/sandbox-frontend" >> .env
+          echo "IMAGE_REGISTRY=${{ vars.NEXUS_HOST }}/adylkhanov" >> .env
+          echo "REPOSITORY_BACKEND=${{ vars.NEXUS_HOST }}/adylkhanov-backend-docker/sandbox-backend" >> .env
+          echo "REPOSITORY_FRONTEND=${{ vars.NEXUS_HOST }}/adylkhanov-frontend-docker/sandbox-frontend" >> .env
 
       - name: Setup SSH key and known_hosts
         run: |
@@ -112,7 +112,7 @@ jobs:
 
       - name: Copy deployment files to VM
         run: |
-          scp docker-compose.yml .env deploy.sh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:~/app/
+          scp docker-compose.yml .env deploy.sh ${{ vars.VM_USER }}@${{ vars.VM_HOST }}:~/app/
 
       - name: Execute deployment via SSH
         run: |
