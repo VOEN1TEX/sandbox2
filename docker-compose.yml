@@ -1,6 +1,6 @@
 services:
   backend:
-    image: adylkhanov-backend:latest
+    image: 153.51.118.157:8081/adylkhanov-backend-docker/sandbox-bakend:latest
     env_file:
       - .env
     ports:
@@ -10,7 +10,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: adylkhanov-frontend:latest
+    image: 153.51.118.157:8081/adylkhanov-frontend-docker/sandbox-bakend:latest
     env_file:
       - .env
     ports:
