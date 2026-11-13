@@ -1,18 +1,21 @@
-name: buil_obraz
+name: CI Pipeline
 
 on:
   push:
-    branches: [ "**" ]
+    branches: ["**"]
   workflow_dispatch:
     inputs:
       VERSION:
-        description: "ручками ввести версию"
+        description: 'Версия для деплоя (для отката). Оставьте пустым для новой сборки.'
         required: false
         type: string
 
+permissions:
+  contents: read
+  packages: write
 
 jobs:
- version:
+  version:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set_version.outputs.version }}
@@ -23,21 +26,111 @@ jobs:
           if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.VERSION }}" ]; then
             echo "version=${{ github.event.inputs.VERSION }}" >> $GITHUB_OUTPUT
           else
-            # Иначе генерируем новую версию
             echo "version=$(date -u +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
           fi
 
-  jobs:
-    build:
-      name: build
-      runs-on: ubuntu-latest
-      outputs:
-        - name: Calculation version 
-          id: version
-          env: 
-            INPUT_VERSION: ${{ inputs.VERSION }}
-          run: |
-            VERSION=$(date -u +%Y%m%d-%H%M%S)
-            echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-            echo "VERSION=${VERSION}
-  
+  build:
+    needs: version
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [backend, frontend]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Nexus Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.NEXUS_HOST }}
+          username: ${{ secrets.NEXUS_REPO_USER }}
+          password: ${{ secrets.NEXUS_REPO_PASS }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ github.repository_owner }}/sandbox-${{ matrix.component }}
+            ${{ secrets.NEXUS_HOST }}/adylkhanovtm-${{ matrix.component }}-docker/sandbox-${{ matrix.component }}
+          tags: |
+            type=raw,value=${{ needs.version.outputs.version }}
+            type=sha,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.component }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: [version, build]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create and configure .env
+        run: |
+          echo "${{ secrets.APP_ENV_FILE }}" > .env
+          
+          echo "" >> .env
+          echo "# Автоматически добавлено пайплайном" >> .env
+          echo "VERSION=${{ needs.version.outputs.version }}" >> .env
+          echo "IMAGE_TAG=${{ needs.version.outputs.version }}" >> .env
+
+          # echo "IMAGE_REGISTRY=ghcr.io/${{ github.repository_owner }}" >> .env
+          echo "IMAGE_REGISTRY=${{ secrets.NEXUS_HOST }}/adylkhanotm" >> .env
+          
+          echo "REPOSITORY_BACKEND=${IMAGE_REGISTRY}-backend-docker/sandbox-backend" >> .env
+          echo "REPOSITORY_FRONTEND=${IMAGE_REGISTRY}-frontend-docker/sandbox-frontend" >> .env
+
+      - name: Setup SSH key and known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.VM_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Copy deployment files to VM
+        run: |
+          scp docker-compose.yml .env deploy.sh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:~/app/
+
+      - name: Execute deployment via SSH
+        run: |
+          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
+            cd ~/app
+            
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+            echo "${{ secrets.NEXUS_REPO_PASS }}" | docker login ${{ secrets.NEXUS_HOST }} -u ${{ secrets.NEXUS_REPO_USER }} --password-stdin
+            
+            docker compose pull
+            docker compose up -d --remove-orphans
+            
+            docker image prune -f
+            
+            echo "${{ needs.version.outputs.version }}" > version.txt
+          EOF
+
+      - name: Healthcheck
+        run: |
+          # Проверка эндпоинта. Замените URL на актуальный для вашего приложения
+          # Если приложение отвечает не 200, пайплайн упадет
+          curl -f -s -o /dev/null -w "%{http_code}" http://${{ secrets.VM_HOST }}/health || (echo "Healthcheck failed!" && exit 1)
