@@ -120,7 +120,7 @@ jobs:
             cd ~/app
             
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-            echo "${{ secrets.NEXUS_REPO_PASS }}" | docker login ${{ vars.NEXUS_HOST }} -u ${{ vasrs.NEXUS_REPO_USER }} --password-stdin
+            echo "${{ secrets.NEXUS_REPO_PASS }}" | docker login ${{ vars.NEXUS_HOST }} -u ${{ vars.NEXUS_REPO_USER }} --password-stdin
             
             docker compose pull
             docker compose up -d --remove-orphans
@@ -131,4 +131,4 @@ jobs:
 
       - name: Healthcheck
         run: |
-          curl -f -s -o /dev/null -w "%{http_code}" http://${{ secrets.VM_HOST }}/health || (echo "Healthcheck failed!" && exit 1)
+          curl -f -s -o /dev/null -w "%{http_code}" http://${{ vars.VM_HOST }}/health || (echo "Healthcheck failed!" && exit 1)
