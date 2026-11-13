@@ -61,10 +61,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Nexus Registry
+      # ИСПРАВЛЕНИЕ: Заменен экшен на прямой docker login для работы с HTTP
+      - name: Login to Nexus Registry (HTTP)
         if: ${{ vars.NEXUS_HOST != '' }}
         run: |
-          echo "${{ secrets.NEXUS_REPO_PASS }}" | docker login ${{ vars.NEXUS_HOST }} -u ${{ vars.NEXUS_REPO_USER }} --password-stdin --tls-verify=false
+          echo "${{ secrets.NEXUS_REPO_PASS }}" | docker login ${{ vars.NEXUS_HOST }} -u ${{ vars.NEXUS_REPO_USER }} --password-stdin
 
       - name: Extract Docker metadata
         id: meta
