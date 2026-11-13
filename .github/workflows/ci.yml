@@ -131,6 +131,4 @@ jobs:
 
       - name: Healthcheck
         run: |
-          # Проверка эндпоинта. Замените URL на актуальный для вашего приложения
-          # Если приложение отвечает не 200, пайплайн упадет
           curl -f -s -o /dev/null -w "%{http_code}" http://${{ secrets.VM_HOST }}/health || (echo "Healthcheck failed!" && exit 1)
