@@ -129,7 +129,7 @@ jobs:
 
       - name: Copy deployment files to VM
         run: |
-          scp -i ~/.ssh/authorized_keys docker-compose.yaml .env ${{ vars.VM_USER }}@${{ vars.VM_HOST }}:~/app/
+          scp -i ~/.ssh/authorized_keys docker-compose.yml .env ${{ vars.VM_USER }}@${{ vars.VM_HOST }}:~/app/
 
       - name: Execute deployment via SSH
         run: |
