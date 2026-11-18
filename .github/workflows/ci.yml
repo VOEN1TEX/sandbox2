@@ -72,15 +72,9 @@ jobs:
           config: /tmp/buildkitd.toml
 
       - name: Login to Nexus Registry (HTTP)
-        env:
-          NEXUS_HOST: ${{ vars.NEXUS_HOST }}
-          NEXUS_USER: ${{ vars.NEXUS_REPO_USER }}
-          NEXUS_PASSWORD: ${{ secrets.NEXUS_REPO_PASS }}
+        if: ${{ vars.NEXUS_HOST != '' }}
         run: |
-          printf '%s' "$NEXUS_PASSWORD" |
-            docker login "http://${NEXUS_HOST}" \
-              --username "$NEXUS_USER" \
-              --password-stdin
+          echo "${{ secrets.NEXUS_REPO_PASS }}" | docker login ${{ vars.NEXUS_HOST }} -u ${{ vars.NEXUS_REPO_USER }} --password-stdin
 
       - name: Extract Docker metadata
         id: meta
