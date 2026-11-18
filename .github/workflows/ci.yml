@@ -74,7 +74,7 @@ jobs:
       - name: Login to Nexus Registry (HTTP)
         if: ${{ vars.NEXUS_HOST != '' }}
         run: |
-          echo "${{ secrets.NEXUS_REPO_PASS }}" |  sudo docker login ${{ vars.NEXUS_HOST }} -u ${{ vars.NEXUS_REPO_USER }} --password-stdin
+          echo "${{ secrets.NEXUS_REPO_PASS }}" sudo -H docker login ${{ vars.NEXUS_HOST }} -u ${{ vars.NEXUS_REPO_USER }} --password-stdin
 
       - name: Extract Docker metadata
         id: meta
