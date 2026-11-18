@@ -70,7 +70,14 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           config: /tmp/buildkitd.toml
-
+          
+      - name: Verify Docker insecure registry config
+        run: |
+          echo "=== daemon.json ==="
+          sudo cat /etc/docker/daemon.json
+          echo "=== docker info insecure registries ==="
+          sudo docker info | grep -A 5 "Insecure Registries"
+          
       - name: Login to Nexus Registry (HTTP)
         if: ${{ vars.NEXUS_HOST != '' }}
         run: |
