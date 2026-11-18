@@ -45,10 +45,6 @@ jobs:
         env:
           NEXUS_HOST: ${{ vars.NEXUS_HOST }}
         run: |
-          if [[ ! "$NEXUS_HOST" =~ ^[a-zA-Z0-9.-]+:[0-9]+$ ]]; then
-            echo '::error::NEXUS_HOST must be host:port, without a scheme or repository path.'
-            exit 1
-          fi
           sudo mkdir -p /etc/docker
           if [ ! -e /etc/docker/daemon.json ]; then
             echo '{}' | sudo tee /etc/docker/daemon.json >/dev/null
@@ -56,33 +52,6 @@ jobs:
           DOCKERD_CONFIG=$(sudo jq --arg host "$NEXUS_HOST" '. + {"insecure-registries": (((.["insecure-registries"] // []) + [$host]) | unique)}' /etc/docker/daemon.json)
           echo "$DOCKERD_CONFIG" | sudo tee /etc/docker/daemon.json >/dev/null
           sudo systemctl restart docker
-
-      - name: Verify Nexus HTTP connector and Docker configuration
-        if: ${{ vars.NEXUS_HOST != '' }}
-        env:
-          NEXUS_HOST: ${{ vars.NEXUS_HOST }}
-        run: |
-          docker info --format '{{json .RegistryConfig.IndexConfigs}}' |
-            jq -e --arg host "$NEXUS_HOST" '.[$host].Secure == false' >/dev/null || {
-              echo '::error::The Docker daemon used by this job does not recognize NEXUS_HOST as an insecure registry.'
-              exit 1
-            }
-          if ! status=$(curl --silent --show-error --connect-timeout 10 --max-time 20 \
-            --output /dev/null --write-out '%{http_code}' "http://$NEXUS_HOST/v2/"); then
-            echo '::error::Nexus HTTP connector is unreachable. Check the listener, published container port, firewall and runner network access. Changing credentials will not fix a timeout.'
-            exit 1
-          fi
-          case "$status" in
-            200|401) echo "Docker Registry API is reachable (HTTP $status)." ;;
-            *) echo "::error::Expected Docker Registry API HTTP 200 or 401, got $status. Check NEXUS_HOST and connector routing."; exit 1 ;;
-          esac
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create BuildKit config for insecure registry
         if: ${{ vars.NEXUS_HOST != '' }}
