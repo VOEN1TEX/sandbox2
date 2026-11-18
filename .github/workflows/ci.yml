@@ -71,12 +71,19 @@ jobs:
         with:
           config: /tmp/buildkitd.toml
           
-      - name: Check network connectivity to Nexus
+      - name: Diagnose Nexus access
+        env:
+          NEXUS_HOST: ${{ vars.NEXUS_HOST }}
         run: |
-          echo "=== Checking TCP port 8081 ==="
-          timeout 10 bash -c 'cat < /dev/null > /dev/tcp/153.51.112.29/8081' && echo "PORT IS OPEN" || echo "PORT IS CLOSED OR TIMEOUT"
-          echo "=== Checking HTTP response ==="
-          curl -v -m 10 http://153.51.112.29:8081/v2/ || echo "CURL FAILED"
+          echo "Configured registry: $NEXUS_HOST"
+
+          echo "Docker registry configuration:"
+          docker info --format '{{json .RegistryConfig}}'
+
+          echo "HTTP response from Nexus Docker API:"
+          curl --verbose --connect-timeout 5 --max-time 15 \
+            --output /dev/null \
+            "http://${NEXUS_HOST}/v2/"
           
       - name: Login to Nexus Registry (HTTP)
         if: ${{ vars.NEXUS_HOST != '' }}
