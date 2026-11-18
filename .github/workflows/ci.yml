@@ -71,12 +71,12 @@ jobs:
         with:
           config: /tmp/buildkitd.toml
           
-      - name: Verify Docker insecure registry config
+      - name: Check network connectivity to Nexus
         run: |
-          echo "=== daemon.json ==="
-          sudo cat /etc/docker/daemon.json
-          echo "=== docker info insecure registries ==="
-          sudo docker info | grep -A 5 "Insecure Registries"
+          echo "=== Checking TCP port 8081 ==="
+          timeout 10 bash -c 'cat < /dev/null > /dev/tcp/153.51.112.29/8081' && echo "PORT IS OPEN" || echo "PORT IS CLOSED OR TIMEOUT"
+          echo "=== Checking HTTP response ==="
+          curl -v -m 10 http://153.51.112.29:8081/v2/ || echo "CURL FAILED"
           
       - name: Login to Nexus Registry (HTTP)
         if: ${{ vars.NEXUS_HOST != '' }}
