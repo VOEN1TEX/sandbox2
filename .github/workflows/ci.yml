@@ -71,20 +71,6 @@ jobs:
         with:
           config: /tmp/buildkitd.toml
           
-      - name: Diagnose Nexus access
-        env:
-          NEXUS_HOST: ${{ vars.NEXUS_HOST }}
-        run: |
-          echo "Configured registry: $NEXUS_HOST"
-
-          echo "Docker registry configuration:"
-          docker info --format '{{json .RegistryConfig}}'
-
-          echo "HTTP response from Nexus Docker API:"
-          curl --verbose --connect-timeout 5 --max-time 15 \
-            --output /dev/null \
-            "http://${NEXUS_HOST}/v2/"
-          
       - name: Login to Nexus Registry (HTTP)
         if: ${{ vars.NEXUS_HOST != '' }}
         run: |
