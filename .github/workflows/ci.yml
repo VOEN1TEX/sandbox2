@@ -94,6 +94,8 @@ jobs:
           context: ./src/${{ matrix.component }}
           file: ./src/${{ matrix.component }}/Dockerfile
           push: true
+          provenance: false 
+          sbom: false 
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
