@@ -20,7 +20,7 @@ jobs:
     outputs:
       version: ${{ steps.set_version.outputs.version }}
     steps:
-      - name: Set Version
+      - name: Определение версии
         id: set_version
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.VERSION }}" ]; then
@@ -37,10 +37,10 @@ jobs:
       matrix:
         component: [backend, frontend]
     steps:
-      - name: Checkout repository
+      - name: Проверка репозитория
         uses: actions/checkout@v4
 
-      # - name: Configure Docker for insecure registry
+      # - name: Конфигруация Docker
       #   if: ${{ vars.NEXUS_HOST != '' }}
       #   env:
       #     NEXUS_HOST: ${{ vars.NEXUS_HOST }}
@@ -53,7 +53,7 @@ jobs:
       #     echo "$DOCKERD_CONFIG" | sudo tee /etc/docker/daemon.json >/dev/null
       #     sudo systemctl restart docker
 
-      # - name: Create BuildKit config for insecure registry
+      # - name: Создание BuildKit
       #   if: ${{ vars.NEXUS_HOST != '' }}
       #   run: |
       #     cat <<EOF > /tmp/buildkitd.toml
@@ -61,12 +61,12 @@ jobs:
       #       http = true
       #     EOF
 
-      - name: Set up Docker Buildx
+      - name: Установка Docker Buildx
         uses: docker/setup-buildx-action@v3
         # with:
         #   config: /tmp/buildkitd.toml
 
-      # - name: Login to Nexus Registry (HTTP)
+      # - name: Авторизация в Nexus Registry
       #   if: ${{ vars.NEXUS_HOST != '' }}
       #   env:
       #     NEXUS_HOST: ${{ vars.NEXUS_HOST }}
@@ -75,14 +75,14 @@ jobs:
       #   run: |
       #     printf '%s' "$NEXUS_REPO_PASS" | docker login "$NEXUS_HOST" -u "$NEXUS_REPO_USER" --password-stdin
 
-      - name: Login to GitHub Container Registry
+      - name: Авторизация GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata
+      - name: Сбор Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -95,7 +95,7 @@ jobs:
             type=sha,format=short
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
-      - name: Build and push Docker image
+      - name: Создание и отправка Docker image
         uses: docker/build-push-action@v6
         with:
           context: ./src/${{ matrix.component }}
@@ -115,10 +115,10 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Проверка repository
         uses: actions/checkout@v4
 
-      - name: Create and configure .env
+      - name: Создание и конфигурация .env
         run: |
           echo "${{ vars.APP_ENV_FILE }}" > .env
           echo "" >> .env
@@ -132,7 +132,7 @@ jobs:
           # echo "REPOSITORY_BACKEND=${{ vars.NEXUS_HOST }}/adylkhanov-backend-docker/sandbox-backend" >> .env
           # echo "REPOSITORY_FRONTEND=${{ vars.NEXUS_HOST }}/adylkhanov-frontend-docker/sandbox-frontend" >> .env
 
-      - name: Setup SSH key and known_hosts
+      - name: Усановка SSH ключей
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_rsa
@@ -140,11 +140,11 @@ jobs:
           echo "${{ secrets.VM_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Copy deployment files to VM
+      - name: Копирование задеплоинных файлов на виртуальную машину 
         run: |
           scp docker-compose.yml .env ${{ vars.VM_USER }}@${{ vars.VM_HOST }}:~/app/
 
-      - name: Execute deployment via SSH
+      - name: Развертка задеплоенных файлов по SSH
         run: |
           ssh ${{ vars.VM_USER }}@${{ vars.VM_HOST }} << 'EOF'
             set -e
@@ -160,7 +160,7 @@ jobs:
             echo "${{ needs.version.outputs.version }}" > version.txt
           EOF
 
-      - name: Healthcheck
+      - name: Проверка работоспособности
         env:
           VM_HOST: ${{ vars.VM_HOST }}
         run: |
