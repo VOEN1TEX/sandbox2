@@ -40,40 +40,47 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configure Docker for insecure registry
-        if: ${{ vars.NEXUS_HOST != '' }}
-        env:
-          NEXUS_HOST: ${{ vars.NEXUS_HOST }}
-        run: |
-          sudo mkdir -p /etc/docker
-          if [ ! -e /etc/docker/daemon.json ]; then
-            echo '{}' | sudo tee /etc/docker/daemon.json >/dev/null
-          fi
-          DOCKERD_CONFIG=$(sudo jq --arg host "$NEXUS_HOST" '. + {"insecure-registries": (((.["insecure-registries"] // []) + [$host]) | unique)}' /etc/docker/daemon.json)
-          echo "$DOCKERD_CONFIG" | sudo tee /etc/docker/daemon.json >/dev/null
-          sudo systemctl restart docker
+      # - name: Configure Docker for insecure registry
+      #   if: ${{ vars.NEXUS_HOST != '' }}
+      #   env:
+      #     NEXUS_HOST: ${{ vars.NEXUS_HOST }}
+      #   run: |
+      #     sudo mkdir -p /etc/docker
+      #     if [ ! -e /etc/docker/daemon.json ]; then
+      #       echo '{}' | sudo tee /etc/docker/daemon.json >/dev/null
+      #     fi
+      #     DOCKERD_CONFIG=$(sudo jq --arg host "$NEXUS_HOST" '. + {"insecure-registries": (((.["insecure-registries"] // []) + [$host]) | unique)}' /etc/docker/daemon.json)
+      #     echo "$DOCKERD_CONFIG" | sudo tee /etc/docker/daemon.json >/dev/null
+      #     sudo systemctl restart docker
 
-      - name: Create BuildKit config for insecure registry
-        if: ${{ vars.NEXUS_HOST != '' }}
-        run: |
-          cat <<EOF > /tmp/buildkitd.toml
-          [registry."${{ vars.NEXUS_HOST }}"]
-            http = true
-          EOF
+      # - name: Create BuildKit config for insecure registry
+      #   if: ${{ vars.NEXUS_HOST != '' }}
+      #   run: |
+      #     cat <<EOF > /tmp/buildkitd.toml
+      #     [registry."${{ vars.NEXUS_HOST }}"]
+      #       http = true
+      #     EOF
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        # with:
+        #   config: /tmp/buildkitd.toml
+
+      # - name: Login to Nexus Registry (HTTP)
+      #   if: ${{ vars.NEXUS_HOST != '' }}
+      #   env:
+      #     NEXUS_HOST: ${{ vars.NEXUS_HOST }}
+      #     NEXUS_REPO_USER: ${{ vars.NEXUS_REPO_USER }}
+      #     NEXUS_REPO_PASS: ${{ secrets.NEXUS_REPO_PASS }}
+      #   run: |
+      #     printf '%s' "$NEXUS_REPO_PASS" | docker login "$NEXUS_HOST" -u "$NEXUS_REPO_USER" --password-stdin
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          config: /tmp/buildkitd.toml
-          
-      - name: Login to Nexus Registry (HTTP)
-        if: ${{ vars.NEXUS_HOST != '' }}
-        env:
-          NEXUS_HOST: ${{ vars.NEXUS_HOST }}
-          NEXUS_REPO_USER: ${{ vars.NEXUS_REPO_USER }}
-          NEXUS_REPO_PASS: ${{ secrets.NEXUS_REPO_PASS }}
-        run: |
-          printf '%s' "$NEXUS_REPO_PASS" | docker login "$NEXUS_HOST" -u "$NEXUS_REPO_USER" --password-stdin
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract Docker metadata
         id: meta
@@ -81,7 +88,8 @@ jobs:
         with:
           images: |
             ghcr.io/${{ github.repository_owner }}/sandbox-${{ matrix.component }}
-            ${{ vars.NEXUS_HOST }}/adylkhanov-${{ matrix.component }}-docker/sandbox-${{ matrix.component }}
+          # Nexus image publication is disabled:
+          # ${{ vars.NEXUS_HOST }}/adylkhanov-${{ matrix.component }}-docker/sandbox-${{ matrix.component }}
           tags: |
             type=raw,value=${{ needs.version.outputs.version }}
             type=sha,format=short
@@ -93,8 +101,8 @@ jobs:
           context: ./src/${{ matrix.component }}
           file: ./src/${{ matrix.component }}/Dockerfile
           push: true
-          provenance: false 
-          sbom: false 
+          provenance: false
+          sbom: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -116,9 +124,13 @@ jobs:
           echo "" >> .env
           echo "VERSION=${{ needs.version.outputs.version }}" >> .env
           echo "IMAGE_TAG=${{ needs.version.outputs.version }}" >> .env
-          echo "IMAGE_REGISTRY=${{ vars.NEXUS_HOST }}/adylkhanov" >> .env
-          echo "REPOSITORY_BACKEND=${{ vars.NEXUS_HOST }}/adylkhanov-backend-docker/sandbox-backend" >> .env
-          echo "REPOSITORY_FRONTEND=${{ vars.NEXUS_HOST }}/adylkhanov-frontend-docker/sandbox-frontend" >> .env
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "IMAGE_REGISTRY=ghcr.io/$owner" >> .env
+          echo "REPOSITORY_BACKEND=ghcr.io/$owner/sandbox-backend" >> .env
+          echo "REPOSITORY_FRONTEND=ghcr.io/$owner/sandbox-frontend" >> .env
+          # echo "IMAGE_REGISTRY=${{ vars.NEXUS_HOST }}/adylkhanov" >> .env
+          # echo "REPOSITORY_BACKEND=${{ vars.NEXUS_HOST }}/adylkhanov-backend-docker/sandbox-backend" >> .env
+          # echo "REPOSITORY_FRONTEND=${{ vars.NEXUS_HOST }}/adylkhanov-frontend-docker/sandbox-frontend" >> .env
 
       - name: Setup SSH key and known_hosts
         run: |
@@ -135,15 +147,16 @@ jobs:
       - name: Execute deployment via SSH
         run: |
           ssh ${{ vars.VM_USER }}@${{ vars.VM_HOST }} << 'EOF'
+            set -e
             cd ~/app
-            
-            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-            echo "${{ secrets.NEXUS_REPO_PASS }}" | docker login ${{ vars.NEXUS_HOST }} -u ${{ vars.NEXUS_REPO_USER }} --password-stdin
-            
+
+            echo "${{ secrets.GHCR_PAT }}" | sudo docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+            # echo "${{ secrets.NEXUS_REPO_PASS }}" | docker login ${{ vars.NEXUS_HOST }} -u ${{ vars.NEXUS_REPO_USER }} --password-stdin
+
             sudo docker compose pull
             sudo docker compose up -d --remove-orphans
             sudo docker image prune -f
-            
+
             echo "${{ needs.version.outputs.version }}" > version.txt
           EOF
 
