@@ -1,6 +1,7 @@
 services:
   backend:
-    image: 153.51.112.29:8081/adylkhanov-backend-docker/sandbox-backend:latest
+    # image: 153.51.112.29:8081/adylkhanov-backend-docker/sandbox-backend:latest
+    image: "${REPOSITORY_BACKEND:?Set GHCR repository}:${IMAGE_TAG:?Set image version}"
     env_file:
       - .env
     ports:
@@ -10,7 +11,8 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: 153.51.112.29:8081/adylkhanov-frontend-docker/sandbox-frontend:latest
+    # image: 153.51.112.29:8081/adylkhanov-frontend-docker/sandbox-frontend:latest
+    image: "${REPOSITORY_FRONTEND:?Set GHCR repository}:${IMAGE_TAG:?Set image version}"
     env_file:
       - .env
     ports:
