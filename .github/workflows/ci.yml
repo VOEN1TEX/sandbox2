@@ -98,6 +98,8 @@ jobs:
       - name: Создание и отправка Docker image
         uses: docker/build-push-action@v6
         with:
+          build-args: |
+            VUE_APP_API_URL=http://${{ vars.VM_HOST }}:8081
           context: ./src/${{ matrix.component }}
           file: ./src/${{ matrix.component }}/Dockerfile
           push: true
