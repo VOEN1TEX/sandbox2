@@ -65,12 +65,11 @@ jobs:
 
       - name: Деплой Helm-чарта из GHCR
         run: |
-          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           
           helm upgrade --install sandbox ./sandbox \
             --namespace default \
-            --set backend.image.repository=ghcr.io/${OWNER}/sandbox-backend \
+            --set backend.image.repository=ghcr.io/adylkhanovtm/sandbox-backend \
             --set backend.image.tag=${{ github.event.inputs.VERSION }} \
-            --set frontend.image.repository=ghcr.io/${OWNER}/sandbox-frontend \
+            --set frontend.image.repository=ghcr.io/adylkhanovtm/sandbox-frontend \
             --set frontend.image.tag=${{ github.event.inputs.VERSION }} \
             --wait --atomic
