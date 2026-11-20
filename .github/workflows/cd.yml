@@ -38,15 +38,17 @@ jobs:
           yc config set folder-id "$YC_FOLDER_ID"
           yc config profile activate ci 
 
+          yc iam create-token > /dev/null || (echo "ОШИБКА: yc не может получить токен" && exit 1)
+     
       - name: Настройка kubeconfig
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
         
+          # Меняем путь к yc на правильный в runner'е
           sed -i 's|/root/yandex-cloud/bin/yc|/home/runner/yandex-cloud/bin/yc|g' ~/.kube/config
           
-          grep -A5 "exec:" ~/.kube/config || true
 
       - name: Установка Helm
         uses: azure/setup-helm@v4
