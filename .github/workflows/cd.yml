@@ -15,7 +15,6 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production # Убедитесь, что окружение создано, или удалите эту строку
     steps:
       - name: Проверка репозитория
         uses: actions/checkout@v4
@@ -40,7 +39,6 @@ jobs:
       - name: Настройка kubeconfig
         run: |
           mkdir -p ~/.kube
-          # Раскодируем секрет KUBE_CONFIG и сохраняем в нужную директорию
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
 
