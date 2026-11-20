@@ -23,7 +23,11 @@ jobs:
         run: |
           curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /home/runner/yandex-cloud -n
           echo "/home/runner/yandex-cloud/bin" >> $GITHUB_PATH
-
+          
+      - name: Validate YC_SA_KEY JSON
+        run: |
+          echo "${{ secrets.YC_SA_KEY }}" | python3 -m json.tool > /dev/null
+          
       - name: Configure yc
         env:
           YC_SA_KEY: ${{ secrets.YC_SA_KEY }}
