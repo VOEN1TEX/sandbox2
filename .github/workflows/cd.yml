@@ -16,6 +16,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: VM
+    env:
+      YC_PROFILE: ci 
     steps:
       - name: Проверка репозитория
         uses: actions/checkout@v4
