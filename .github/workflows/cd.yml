@@ -1,0 +1,7 @@
+on:
+  workflow_dispatch:
+    inputs:
+      VERSION:
+        description: "Версия образов (например, 20261119-214623)"
+        required: true
+        type: string
