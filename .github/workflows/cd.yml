@@ -27,10 +27,10 @@ jobs:
           
       - name: Configure yc
         env:
-          YC_SA_KEY_B64: ${{ secrets.YC_SA_KEY_B64 }}
+          YC_SA_KEY: ${{ secrets.YC_SA_KEY }}
           YC_FOLDER_ID: ${{ vars.YC_FOLDER_ID }}
         run: |
-          echo "$YC_SA_KEY_B64" | base64 -d > "$RUNNER_TEMP/yc-sa-key.json"
+          echo "$YC_SA_KEY" | base64 -d > "$RUNNER_TEMP/yc-sa-key.json"
           yc config profile create ci
           yc config set service-account-key "$RUNNER_TEMP/yc-sa-key.json"
           yc config set folder-id "$YC_FOLDER_ID"
