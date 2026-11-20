@@ -29,7 +29,6 @@ jobs:
           YC_SA_KEY: ${{ secrets.YC_SA_KEY }}
           YC_FOLDER_ID: ${{ vars.YC_FOLDER_ID }}
         run: |
-          install -m 600 /dev/null "$RUNNER_TEMP/yc-sa-key.json"
           printf '%s' "$YC_SA_KEY" > "$RUNNER_TEMP/yc-sa-key.json"
 
           yc config profile create ci
