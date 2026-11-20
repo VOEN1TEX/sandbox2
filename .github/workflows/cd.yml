@@ -34,6 +34,7 @@ jobs:
           yc config profile create ci
           yc config set service-account-key "$RUNNER_TEMP/yc-sa-key.json"
           yc config set folder-id "$YC_FOLDER_ID"
+          yc config profile activate ci 
 
       - name: Настройка kubeconfig
         run: |
