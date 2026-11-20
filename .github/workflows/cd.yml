@@ -55,11 +55,15 @@ jobs:
       - name: Проверка подключения к кластеру
         run: kubectl cluster-info
 
-      - name: Деплой Helm-чарта
+      - name: Деплой Helm-чарта из GHCR
         run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          
+          # Выполняем деплой с указанием полных путей к образам и версии
           helm upgrade --install sandbox ./sandbox \
             --namespace default \
-            --set image.tag=${{ github.event.inputs.VERSION }} \
+            --set backend.image.repository=ghcr.io/${OWNER}/sandbox-backend \
             --set backend.image.tag=${{ github.event.inputs.VERSION }} \
+            --set frontend.image.repository=ghcr.io/${OWNER}/sandbox-frontend \
             --set frontend.image.tag=${{ github.event.inputs.VERSION }} \
             --wait --atomic
