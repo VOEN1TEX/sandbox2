@@ -1,7 +1,67 @@
+name: CD Deploy to Kubernetes
+
 on:
   workflow_dispatch:
     inputs:
       VERSION:
-        description: "Версия образов (например, 20261119-214623)"
+        description: 'Версия для деплоя (тег образа из CI)'
         required: true
         type: string
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production # Убедитесь, что окружение создано, или удалите эту строку
+    steps:
+      - name: Проверка репозитория
+        uses: actions/checkout@v4
+
+      - name: Установка Yandex Cloud CLI
+        run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /home/runner/yandex-cloud -n
+          echo "/home/runner/yandex-cloud/bin" >> $GITHUB_PATH
+
+      - name: Configure yc
+        env:
+          YC_SA_KEY: ${{ secrets.YC_SA_KEY }}
+          YC_FOLDER_ID: ${{ vars.YC_FOLDER_ID }}
+        run: |
+          install -m 600 /dev/null "$RUNNER_TEMP/yc-sa-key.json"
+          printf '%s' "$YC_SA_KEY" > "$RUNNER_TEMP/yc-sa-key.json"
+
+          yc config profile create ci
+          yc config set service-account-key "$RUNNER_TEMP/yc-sa-key.json"
+          yc config set folder-id "$YC_FOLDER_ID"
+
+      - name: Настройка kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          # Раскодируем секрет KUBE_CONFIG и сохраняем в нужную директорию
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Установка Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Установка kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.30.0'
+
+      - name: Проверка подключения к кластеру
+        run: kubectl cluster-info
+
+      - name: Деплой Helm-чарта
+        run: |
+          helm upgrade --install sandbox ./sandbox \
+            --namespace default \
+            --set image.tag=${{ github.event.inputs.VERSION }} \
+            --set backend.image.tag=${{ github.event.inputs.VERSION }} \
+            --set frontend.image.tag=${{ github.event.inputs.VERSION }} \
+            --wait --atomic
