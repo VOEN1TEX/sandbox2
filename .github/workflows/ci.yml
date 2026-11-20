@@ -126,10 +126,10 @@ jobs:
           echo "" >> .env
           echo "VERSION=${{ needs.version.outputs.version }}" >> .env
           echo "IMAGE_TAG=${{ needs.version.outputs.version }}" >> .env
-          echo "IMAGE_REGISTRY=ghcr.io/$owner" >> .env
+          echo "IMAGE_REGISTRY=ghcr.io/adylkhanovtm" >> .env
           echo "REPOSITORY_BACKEND=ghcr.io/adylkhanovtm/sandbox-backend" >> .env
           echo "REPOSITORY_FRONTEND=ghcr.io/adylkhanovtm/sandbox-frontend" >> .env
-          # echo "IMAGE_REGISTRY=${{ vars.NEXUS_HOST }}/adylkhanov" >> .env
+          # echo "IMAGE_REGISTRY=${{ vars.NEXUS_HOST }}/adylkhanovtm" >> .env
           # echo "REPOSITORY_BACKEND=${{ vars.NEXUS_HOST }}/adylkhanovtm-backend-docker/sandbox-backend" >> .env
           # echo "REPOSITORY_FRONTEND=${{ vars.NEXUS_HOST }}/adylkhanovtm-frontend-docker/sandbox-frontend" >> .env
 
