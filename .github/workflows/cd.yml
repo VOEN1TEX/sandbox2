@@ -26,6 +26,8 @@ jobs:
           echo "/home/runner/yandex-cloud/bin" >> $GITHUB_PATH
           
       - name: Validate YC_SA_KEY JSON
+        env:
+          YC_SA_KEY: ${{ secrets.YC_SA_KEY }}
         run: |
           echo "${{ secrets.YC_SA_KEY }}" | python3 -m json.tool > /dev/null
           
