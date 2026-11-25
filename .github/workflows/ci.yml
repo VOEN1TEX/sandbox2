@@ -88,7 +88,6 @@ jobs:
         with:
           images: |
             ghcr.io/adylkhanovtm/sandbox-${{ matrix.component }}
-          # Nexus image publication is disabled:
           # ${{ vars.NEXUS_HOST }}/adylkhanovtm-${{ matrix.component }}-docker/sandbox-${{ matrix.component }}
           tags: |
             type=raw,value=${{ needs.version.outputs.version }}
